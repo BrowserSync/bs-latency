@@ -1,0 +1,37 @@
+{
+  "name": "bs-latency",
+  "version": "1.0.0",
+  "description": "Add artificial latency to defined routes.",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha tests",
+    "nodemon": "nodemon example.js --watch . --watch ui -e html,js"
+  },
+  "keywords": [
+    "browser sync plugin",
+    "latency"
+  ],
+  "author": "Shane Osbourne",
+  "license": "MIT",
+  "devDependencies": {
+    "browser-sync": "^2.8.2",
+    "bs-rewrite-rules": "1.0.0",
+    "chai": "^3.2.0",
+    "mocha": "^2.2.5",
+    "nodemon": "1.8.1"
+  },
+  "dependencies": {
+    "immutable": "^3.7.4"
+  },
+  "browser-sync:ui": {
+    "hooks": {
+      "markup": "ui/latency.html",
+      "templates": [
+        "ui/latency.directive.html"
+      ],
+      "client:js": [
+        "ui/latency.client.js"
+      ]
+    }
+  }
+}

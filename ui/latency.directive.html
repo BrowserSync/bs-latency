@@ -1,0 +1,74 @@
+<section>
+    <div bs-panel-content>
+        <p>
+            <button bs-button="size-small subtle-alt icon-left" ng-click="ctrl.showInputs($event)">
+                <icon icon="circle-plus" ng-show="!ctrl.state.adding"></icon>
+                <icon icon="bin" ng-show="ctrl.state.adding"></icon>
+                {{ctrl.ui.buttonText}}
+            </button>
+        </p>
+        <form name="latencyForm" ng-show="ctrl.state.adding">
+        <div bs-textarea-input>
+            <input
+                    id="rewrite-replace"
+                    cols="30"
+                    rows="5"
+                    name="replace-input"
+                    bs-code-input
+                    ng-required="1"
+                    ng-minlength="1"
+                    ng-model="ctrl.inputs.route"
+                    placeholder="Eg: /api" />
+            <br/>
+        </div>
+        <div bs-heading-bar ng-show="ctrl.state.adding">
+            <label for="latency-input" bs-input-label>Latency (ms)</label>
+            <div bs-button-group>
+                <div bs-input="text">
+                    <input type="number" placeholder="eg: 2000"
+                           ng-required="1"
+                           ng-minlength="1"
+                           ng-model="ctrl.inputs.latency"
+                           id="latency-input"/>
+                </div>
+            </div>
+        </div>
+        <div ng-class="[ctrl.state.classname]" bs-state-wrapper ng-show="ctrl.state.adding">
+            <div bs-button-group>
+                <button id="save-rule" bs-button="size-small subtle-alt icon-left"
+                        ng-click="ctrl.save()"
+                        ng-disabled="ctrl.state.waiting || !latencyForm.$valid">
+                    <svg bs-svg-icon><use xlink:href="#svg-circle-ok"></use></svg>
+                    Save
+                </button>
+            </div>
+            <div bs-state-icons>
+                <icon icon="circle-ok" bs-state="success inline"></icon>
+                <icon icon="circle-minus" bs-state="waiting inline" bs-anim="spin"></icon>
+            </div>
+        </div>
+        </form>
+        <ul bs-list="bordered inline-controls">
+            <li ng-repeat="item in ctrl.latency.items track by item.id">
+                <span bs-tag>{{item.latency}}ms <span>latency</span></span>
+                <p>{{item.route}}</p>
+                <div bs-button-group>
+                    <button bs-button="subtle-alt icon" ng-click="ctrl.edit(item)">
+                        <icon icon="pencil"></icon>
+                    </button>
+                    <button href="#"
+                       title="Pause this route"
+                       bs-button="subtle-alt icon"
+                       ng-click="ctrl.pause(item)"
+                       ng-class="{success: item.success}">
+                        <icon icon="circle-pause" ng-show="item.active"></icon>
+                        <icon icon="circle-play" ng-show="!item.active"></icon>
+                    </button>
+                    <button href="#" bs-button="subtle-alt icon" bs-remove ng-click="ctrl.delete(item)">
+                        <icon icon="bin"></icon>
+                    </button>
+                </div>
+            </li>
+        </ul>
+    </div>
+</section>
