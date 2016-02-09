@@ -1,4 +1,13 @@
 <section>
+    <style>
+        input[type="number"] {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        [bs-textarea-input] {
+            margin-bottom: 30px;
+        }
+    </style>
     <div bs-panel-content>
         <p>
             <button bs-button="size-small subtle-alt icon-left" ng-click="ctrl.showInputs($event)">
@@ -9,29 +18,27 @@
         </p>
         <form name="latencyForm" ng-show="ctrl.state.adding">
         <div bs-textarea-input>
+            <label for="latency-route" bs-input-label>Route</label>
             <input
-                    id="rewrite-replace"
-                    cols="30"
-                    rows="5"
-                    name="replace-input"
-                    bs-code-input
+                    id="latency-route"
+                    name="latency-route"
                     ng-required="1"
                     ng-minlength="1"
+                    bs-code-input=""
                     ng-model="ctrl.inputs.route"
                     placeholder="Eg: /api" />
             <br/>
         </div>
-        <div bs-heading-bar ng-show="ctrl.state.adding">
+        <div bs-textarea-input ng-show="ctrl.state.adding">
             <label for="latency-input" bs-input-label>Latency (ms)</label>
-            <div bs-button-group>
-                <div bs-input="text">
-                    <input type="number" placeholder="eg: 2000"
-                           ng-required="1"
-                           ng-minlength="1"
-                           ng-model="ctrl.inputs.latency"
-                           id="latency-input"/>
-                </div>
-            </div>
+            <input type="number"
+                   placeholder="eg: 2000"
+                   ng-required="1"
+                   ng-minlength="1"
+                   bs-code-input=""
+                   ng-model="ctrl.inputs.latency"
+                   id="latency-input"/>
+            <br>
         </div>
         <div ng-class="[ctrl.state.classname]" bs-state-wrapper ng-show="ctrl.state.adding">
             <div bs-button-group>
@@ -48,23 +55,24 @@
             </div>
         </div>
         </form>
+        <p ng-show="ctrl.latency.items.length">There's artificial latency being applied to the following:</p>
         <ul bs-list="bordered inline-controls">
             <li ng-repeat="item in ctrl.latency.items track by item.id">
                 <span bs-tag>{{item.latency}}ms <span>latency</span></span>
-                <p>{{item.route}}</p>
+                <p>{{item.route}} <span ng-show="!item.active" style="font-size: 12px; color: grey">(paused)</span>   </p>
                 <div bs-button-group>
-                    <button bs-button="subtle-alt icon" ng-click="ctrl.edit(item)">
+                    <button bs-button="subtle-alt icon" ng-click="ctrl.edit(item)" title="Edit this item">
                         <icon icon="pencil"></icon>
                     </button>
                     <button href="#"
-                       title="Pause this route"
+                       title="Pause/unpause this route"
                        bs-button="subtle-alt icon"
                        ng-click="ctrl.pause(item)"
                        ng-class="{success: item.success}">
                         <icon icon="circle-pause" ng-show="item.active"></icon>
                         <icon icon="circle-play" ng-show="!item.active"></icon>
                     </button>
-                    <button href="#" bs-button="subtle-alt icon" bs-remove ng-click="ctrl.delete(item)">
+                    <button href="#" bs-button="subtle-alt icon" bs-remove ng-click="ctrl.delete(item)" title="Delete this item">
                         <icon icon="bin"></icon>
                     </button>
                 </div>

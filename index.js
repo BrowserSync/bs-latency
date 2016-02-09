@@ -14,8 +14,10 @@ var Immutable = require("immutable");
  */
 module.exports["plugin"] = function (opts, bs) {
 
-    const ui      = bs.ui;
-    const optPath = config.OPT_PATH;
+    const ui         = bs.ui;
+    const optPath    = config.OPT_PATH;
+    var pluginActive = true;
+    const itemsPath  = config.OPT_PATH.concat('items');
     const items   = opts.routes && opts.routes.length
         ? Immutable.fromJS(opts.routes)
         : Immutable.List([]);
@@ -23,10 +25,13 @@ module.exports["plugin"] = function (opts, bs) {
     var mutableItems = [];
 
     bs.addMiddleware('*', function (req, res, next) {
+        if (!pluginActive) {
+            return next();
+        }
         var match = mutableItems.filter(function (item) {
-            return req.url.match(new RegExp('^' + item.route));
+            return req.url.match(new RegExp('^' + item.route)) && item.active;
         });
-        if (match.length) {
+        if (match.length && match[0].active) {
             setTimeout(next, match[0].latency);
         } else {
             next();
@@ -41,35 +46,38 @@ module.exports["plugin"] = function (opts, bs) {
         tagline: config.TAG_LINE,
         rate: 0,
         config: config,
-        items: items.map(function (item, i) {
-            return item.set('id', i);
-        })
+        items: Immutable.List([])
     }));
 
     var uid = items.size;
 
     bs.events.on('plugins:configure', function (data) {
-        ui.options = ui.options.updateIn(config.OPT_PATH.concat('active'), function () {
-            return data.active;
-        });
-        console.log(ui.options.getIn(config.OPT_PATH));
+        if (data.name !== config.PLUGIN_NAME) {
+            return;
+        }
+        pluginActive = data.active;
+        ui.options = ui.options.setIn(config.OPT_PATH.concat('active'), data.active);
     });
 
     function resendItems(updated) {
         ui.options = updated;
-        mutableItems = ui.options.getIn(config.OPT_PATH.concat('items')).toJS();
+        mutableItems = ui.options.getIn(itemsPath).toJS();
         ui.socket.emit(config.EVENT_UPDATE, {items:mutableItems});
     }
 
     var methods = {
         add: function (incoming) {
 
+            if (!incoming.route.match(/^\//)) {
+                incoming.route = '/' + incoming.route;
+            }
+
             if (incoming.id !== undefined) {
                 methods.edit(incoming);
                 return;
             }
 
-            const updated = ui.options.updateIn(config.OPT_PATH.concat('items'), function (items) {
+            const updated = ui.options.updateIn(itemsPath, function (items) {
 
                 const match = items.filter(function (item) {
                     return item.get('route') === incoming.route;
@@ -79,16 +87,12 @@ module.exports["plugin"] = function (opts, bs) {
                     return items;
                 }
 
-                if (!incoming.route.match(/^\//)) {
-                    incoming.route = '/' + incoming.route;
-                }
-
                 return items.push(Immutable.fromJS(incoming).set('id', uid++));
             });
             resendItems(updated);
         },
         delete: function (incomingItem) {
-            const updated = ui.options.updateIn(config.OPT_PATH.concat('items'), function (items) {
+            const updated = ui.options.updateIn(itemsPath, function (items) {
                 return items.filter(function (item) {
                     return item.get('id') !== incomingItem.id;
                 })
@@ -96,7 +100,7 @@ module.exports["plugin"] = function (opts, bs) {
             resendItems(updated);
         },
         pause: function (incoming) {
-            const updated = ui.options.updateIn(config.OPT_PATH.concat('items'), function (items) {
+            const updated = ui.options.updateIn(itemsPath, function (items) {
                 return items.map(function (item) {
                     if (item.get('id') === incoming.id) {
                         return item.merge({active: incoming.active});
@@ -107,49 +111,30 @@ module.exports["plugin"] = function (opts, bs) {
             resendItems(updated);
         },
         edit: function (incoming) {
-            const updated = ui.options.updateIn(config.OPT_PATH.concat('items'), function (items) {
+            const updated = ui.options.updateIn(itemsPath, function (items) {
                 return items.map(function (item) {
                     if (item.get('id') === incoming.id) {
-                        return item.merge({route: incoming.route, latency: incoming.latency});
+                        return item.merge({
+                            route: incoming.route,
+                            latency: incoming.latency,
+                            active: incoming.active
+                        });
                     }
                     return item;
                 });
             });
             resendItems(updated);
         },
-        toggle: function (value) {
-            //if (value !== true) {
-            //    value = false;
-            //}
-            //if (value) {
-            //    ui.setOptionIn(optPath.concat("active"), true);
-            //    bs.addMiddleware("*", function (req, res, next) {
-            //        setTimeout(next, timeout);
-            //    }, {id: "cp-latency", override: true});
-            //} else {
-            //    ui.setOptionIn(optPath.concat("active"), false);
-            //    bs.removeMiddleware("cp-latency");
-            //}
-        },
-        adjust: function (data) {
-            //timeout   = parseFloat(data.rate) * 1000;
-            //var saved = ui.options.getIn(optPath.concat("rate"));
-            //if (saved !== data.rate) {
-            //    ui.setOptionIn(optPath.concat("rate"), timeout/1000);
-            //}
-        },
         event: function (event) {
             methods[event.event](event.data);
         }
     };
 
-    methods.add({
-        route: '/json',
-        latency: 3000,
-        active: true
-    })
-
-    console.log(ui.options.getIn(config.OPT_PATH.concat('items')).toJS());
+    if (opts.routes && opts.routes.length) {
+        opts.routes.forEach(function (item) {
+            methods.add(item);
+        })
+    }
 
     ui.listen(config.NS, methods);
 

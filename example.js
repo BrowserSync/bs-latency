@@ -9,11 +9,11 @@ bs.init({
             routes: [
                 {
                     route: '/json',
-                    latency: 3000,
+                    latency: 5000,
                     active: true
                 }
             ]
         }
-    }, 'bs-rewrite-rules'],
-    open:    false
+    }]
 });
+

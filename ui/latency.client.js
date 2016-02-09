@@ -46,14 +46,12 @@
         ctrl.latency = $scope.uiOptions[OPT_PATH[0]][OPT_PATH[1]];
 
         ctrl.showInputs = function ($event) {
-            resetInputs();
             $event.target.blur();
             if (ctrl.state.adding) {
-                ctrl.ui.buttonText = 'Add Route';
-                ctrl.state.adding = false;
+                resetInputs();
+                closeForm();
             } else {
-                ctrl.ui.buttonText = 'Cancel';
-                ctrl.state.adding = true;
+                openForm();
             }
         }
 
@@ -76,11 +74,20 @@
             ctrl.inputs.latency = item.latency;
             ctrl.inputs.route   = item.route;
             ctrl.inputs.id      = item.id;
+            ctrl.inputs.active  = item.active;
             ctrl.ui.buttonText  = 'Cancel';
             ctrl.state.adding   = true;
         };
 
         ctrl.delete = function (item) {
+            /**
+             * deleted the item in the edit fields
+             */
+            if (ctrl.inputs.id === item.id) {
+                resetInputs();
+                closeForm();
+            }
+
             Socket.uiEvent({
                 namespace: NS,
                 event: 'delete',
@@ -90,10 +97,11 @@
 
         ctrl.save = function () {
             ctrl.state.classname = 'waiting';
+
             var incoming = {
                 latency: ctrl.inputs.latency,
                 route: ctrl.inputs.route,
-                active: true,
+                active: ctrl.inputs.active === undefined ? true : ctrl.inputs.active,
                 id: ctrl.inputs.id
             }
             Socket.uiEvent({
@@ -104,18 +112,28 @@
             $timeout(function () {
                 ctrl.state.classname = 'success';
                 $timeout(function () {
+                    ctrl.state.classname = 'ready';
                     resetInputs();
+                    closeForm();
                 }, 500);
             }, 300);
         }
 
         function resetInputs () {
-            ctrl.inputs.route = "";
+            ctrl.inputs.route   = "";
             ctrl.inputs.latency = 1000;
-            ctrl.inputs.id = undefined;
-            ctrl.ui.buttonText = 'Add Route';
-            ctrl.state.classname = 'ready';
-            ctrl.state.adding = false;
+            ctrl.inputs.id      = undefined;
+            ctrl.inputs.active  = undefined;
+        }
+
+        function closeForm () {
+            ctrl.ui.buttonText  = 'Add Route';
+            ctrl.state.adding    = false;
+        }
+
+        function openForm () {
+            ctrl.ui.buttonText  = 'Cancel';
+            ctrl.state.adding    = true;
         }
 
         ctrl.updateItems = function (data) {
