@@ -20,6 +20,20 @@ module.exports["plugin"] = function (opts, bs) {
         ? Immutable.fromJS(opts.routes)
         : Immutable.List([]);
 
+    var mutableItems = [];
+
+    bs.addMiddleware('*', function (req, res, next) {
+        var match = mutableItems.filter(function (item) {
+            return req.url.match(new RegExp('^' + item.route));
+        });
+        if (match.length) {
+            setTimeout(next, match[0].latency);
+        } else {
+            next();
+        }
+    }, {override: true});
+
+
     ui.setOptionIn(optPath, Immutable.Map({
         name: config.PLUGIN_SLUG,
         title: config.PLUGIN_NAME,
@@ -43,7 +57,8 @@ module.exports["plugin"] = function (opts, bs) {
 
     function resendItems(updated) {
         ui.options = updated;
-        ui.socket.emit(config.EVENT_UPDATE, {items:ui.options.getIn(config.OPT_PATH.concat('items'))})
+        mutableItems = ui.options.getIn(config.OPT_PATH.concat('items')).toJS();
+        ui.socket.emit(config.EVENT_UPDATE, {items:mutableItems});
     }
 
     var methods = {
@@ -80,8 +95,16 @@ module.exports["plugin"] = function (opts, bs) {
             });
             resendItems(updated);
         },
-        pause: function () {
-            console.log('PAUSE');
+        pause: function (incoming) {
+            const updated = ui.options.updateIn(config.OPT_PATH.concat('items'), function (items) {
+                return items.map(function (item) {
+                    if (item.get('id') === incoming.id) {
+                        return item.merge({active: incoming.active});
+                    }
+                    return item;
+                });
+            });
+            resendItems(updated);
         },
         edit: function (incoming) {
             const updated = ui.options.updateIn(config.OPT_PATH.concat('items'), function (items) {

@@ -58,7 +58,8 @@
         }
 
         ctrl.pause = function (item) {
-            item.success = true;
+
+            item.active = !item.active;
 
             Socket.uiEvent({
                 namespace: NS,
