@@ -41,19 +41,18 @@ with some pre-defined ones, configure it like this.
 var bs = require('browser-sync').create();
 
 bs.init({
-    server: './app',
-    plugins: [
-        {
-            module: 'bs-latency',
-             options: {
-                 routes: [
-                     {
-                         route: '/api',
-                         latency: 5000,
-                         active: true
-                     }
-                 ]
-         }
-    ]
+    server:  './app',
+    plugins: [{
+        module: 'bs-latency',
+        options: {
+            routes: [
+                {
+                    route: '/json',
+                    latency: 5000,
+                    active: true
+                }
+            ]
+        }
+    }]
 });
 ```
